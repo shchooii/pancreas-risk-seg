@@ -1,0 +1,80 @@
+# docker-compose.yml
+# =============================================================================
+# PACS + AI 서버 구성 (Orthanc DICOMweb + NNInteractive)
+#
+# 사용법:
+#   1. [수정 필요] 표시된 경로를 실제 서버 환경에 맞게 변경
+#   2. docker compose -f anno-docker-compose.yml up -d
+#   3. 접속 확인: http://localhost:8042  (Orthanc 웹 UI)
+#
+# 서비스 포트 요약:
+#   - 4242 : DICOM 통신 (C-STORE, C-FIND 등)
+#   - 8042 : Orthanc 웹 UI + REST API + DICOMweb
+#   - 1527 : NNInteractive AI 서버
+# =============================================================================
+
+services:
+  # 1. 메타데이터 및 인덱스 관리용 DB (PostgreSQL)
+  postgres:
+    image: postgres:15
+    container_name: orthanc_db
+    environment:
+      POSTGRES_USER: orthanc
+      POSTGRES_PASSWORD: orthanc_password
+      POSTGRES_DB: orthanc_db
+    volumes:
+      # [수정 필요] PostgreSQL 데이터 저장 경로
+      # ⚠ WSL2: 반드시 WSL2 내부 경로 사용 (/mnt/d/... 등 Windows 경로 사용 불가)
+      - ./postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  # 2. 대용량 PACS 서버 (Orthanc + DICOMweb)
+  orthanc:
+    image: orthancteam/orthanc:latest
+    container_name: orthanc
+    ports:
+      - "4242:4242" # DICOM 통신 포트 (C-STORE 등)
+      - "8042:8042" # 웹 UI + REST API + DICOMweb 접속 포트
+    environment:
+      # --- PostgreSQL 플러그인 설정 (인덱싱을 Postgres로 넘김) ---
+      ORTHANC__POSTGRESQL__HOST: postgres
+      ORTHANC__POSTGRESQL__PORT: "5432"
+      ORTHANC__POSTGRESQL__DATABASE: orthanc_db
+      ORTHANC__POSTGRESQL__USERNAME: orthanc
+      ORTHANC__POSTGRESQL__PASSWORD: orthanc_password
+      ORTHANC__POSTGRESQL__ENABLE_INDEX: "true"
+      # --- 인증 설정 ---
+      # [수정 필요] 사용자명/비밀번호를 변경하세요
+      # 사용자 추가: {"user1": "pass1", "user2": "pass2"} JSON 형식
+      ORTHANC__AUTHENTICATION_ENABLED: "true"
+      ORTHANC__REGISTERED_USERS: |
+        {"bsnuh": "bsnuh!23"}
+      # --- DICOMweb 플러그인 설정 ---
+      ORTHANC__DICOM_WEB__ENABLE: "true"
+      ORTHANC__DICOM_WEB__ROOT: /dicom-web/
+      ORTHANC__DICOM_WEB__STUDIES_METADATA: Full
+      ORTHANC__DICOM_WEB__SERIES_METADATA: Full
+    depends_on:
+      - postgres
+    volumes:
+      # [수정 필요] TB 단위 DICOM 영상 파일이 실제 해싱되어 저장될 호스트 디스크 경로
+      - ./orthanc_dicom:/var/lib/orthanc/db
+    restart: always
+
+  # 3. AI / 3D Slicer 서버 (nninteractive)
+  nninteractive:
+    image: coendevente/nninteractive-slicer-server:latest
+    container_name: nninteractive
+    ports:
+      - "1527:1527" # AI 서버 접속 포트
+    volumes:
+      # [수정 필요] AI 서버 워크스페이스 용 호스트 경로
+      - ./nn_data:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: always
