@@ -186,7 +186,7 @@ environment:
   # --- 인증 ---
   ORTHANC__AUTHENTICATION_ENABLED: "true"       # 인증 활성화
   ORTHANC__REGISTERED_USERS: |                  # 사용자 목록 (JSON)
-    {"bsnuh": "bsnuh!23"}
+    {"UserID": "UserID!23"}
 
   # --- DICOMweb 플러그인 ---
   ORTHANC__DICOM_WEB__ENABLE: "true"            # DICOMweb 활성화
@@ -203,7 +203,7 @@ environment:
 ```yaml
 ORTHANC__AUTHENTICATION_ENABLED: "true"
 ORTHANC__REGISTERED_USERS: |
-  {"bsnuh": "bsnuh!23"}
+  {"UserID": "UserID!23"}
 ```
 
 > 이 ID/PW가 클라이언트 `config.ini`의 user/password와 일치해야 합니다.
@@ -211,7 +211,7 @@ ORTHANC__REGISTERED_USERS: |
 사용자 추가 — JSON 오브젝트에 쉼표로 추가:
 ```yaml
 ORTHANC__REGISTERED_USERS: |
-  {"bsnuh": "bsnuh!23", "doctor01": "pass456"}
+  {"UserID": "UserID!23", "doctor01": "pass456"}
 ```
 
 ### 3단계: 서버 실행
@@ -246,10 +246,10 @@ docker compose -f anno-docker-compose.yml ps
 # Orthanc 웹 UI (브라우저)
 #   같은 PC: http://localhost:8042
 #   원격:    http://서버IP:8042
-#   ID: bsnuh / PW: bsnuh!23
+#   ID: UserID / PW: UserID!23
 
 # DICOMweb 엔드포인트
-curl -u bsnuh:bsnuh!23 http://localhost:8042/dicom-web/studies
+curl -u UserID:UserID!23 http://localhost:8042/dicom-web/studies
 
 # NNInteractive AI 서버
 curl http://localhost:1527
@@ -272,7 +272,7 @@ docker compose -f anno-docker-compose.yml logs -f orthanc  # 로그 확인
 
 ```yaml
 ORTHANC__REGISTERED_USERS: |
-  {"bsnuh": "bsnuh!23", "newuser": "newpass"}
+  {"UserID": "UserID!23", "newuser": "newpass"}
 ```
 
 ```bash
@@ -297,19 +297,19 @@ Orthanc PACS에 DICOM 데이터를 올리는 방법입니다.
 ```bash
 #우분투
 # 단일 파일 업로드
-curl -u bsnuh:bsnuh!23 -X POST \
+curl -u UserID:UserID!23 -X POST \
   http://localhost:8042/instances \
   --data-binary @/path/to/file.dcm
 
 # 폴더 일괄 업로드 (Linux/WSL2)
 find /path/to/dicom_folder -name "*.dcm" -print0 | \
-  xargs -0 -I {} curl -s -u bsnuh:bsnuh!23 -X POST \
+  xargs -0 -I {} curl -s -u UserID:UserID!23 -X POST \
     http://localhost:8042/instances \
     --data-binary @"{}"
 
 # 병렬 업로드 (동시 4개)
 find /path/to/dicom_folder -name "*.dcm" -print0 | \
-  xargs -0 -P 4 -I {} curl -s -u bsnuh:bsnuh!23 -X POST \
+  xargs -0 -P 4 -I {} curl -s -u UserID:UserID!23 -X POST \
     http://localhost:8042/instances \
     --data-binary @"{}"
 
@@ -318,13 +318,13 @@ find /path/to/dicom_folder -name "*.dcm" -print0 | \
 Windows PowerShell:
 ```powershell
 # 단일 파일
-curl.exe -u bsnuh:bsnuh!23 -X POST `
+curl.exe -u UserID:UserID!23 -X POST `
   http://localhost:8042/instances `
   --data-binary "@D:\dicom\file.dcm"
 
 # 폴더 일괄 업로드
 Get-ChildItem -Path "D:\dicom" -Filter "*.dcm" -Recurse | ForEach-Object {
-  curl.exe -s -u bsnuh:bsnuh!23 -X POST `
+  curl.exe -s -u UserID:UserID!23 -X POST `
     http://localhost:8042/instances `
     --data-binary "@$($_.FullName)"
 }
@@ -334,7 +334,7 @@ Get-ChildItem -Path "D:\dicom" -Filter "*.dcm" -Recurse | ForEach-Object {
 
 ```bash
 # 우분투
-curl -u bsnuh:bsnuh!23 -X POST \
+curl -u UserID:UserID!23 -X POST \
   http://localhost:8042/dicom-web/studies \
   -H "Content-Type: application/dicom" \
   --data-binary @/path/to/file.dcm
@@ -470,8 +470,8 @@ robocopy "D:\pacs\orthanc_dicom" "D:\backup\orthanc_dicom" /MIR /MT:4
 #### REST API 백업 (서비스 무중단)
 
 ```bash
-curl -s -u bsnuh:bsnuh!23 http://localhost:8042/studies | python3 -m json.tool
-curl -u bsnuh:bsnuh!23 http://localhost:8042/studies/{study-id}/archive -o study.zip
+curl -s -u UserID:UserID!23 http://localhost:8042/studies | python3 -m json.tool
+curl -u UserID:UserID!23 http://localhost:8042/studies/{study-id}/archive -o study.zip
 ```
 
 ### 복구 방법
@@ -511,7 +511,7 @@ sleep 10
 
 # DICOM 파일을 Orthanc에 다시 업로드 (인덱스 자동 재구축)
 find /backup/orthanc_dicom -name "*.dcm" | while read f; do
-  curl -s -u bsnuh:bsnuh!23 -X POST \
+  curl -s -u UserID:UserID!23 -X POST \
     http://localhost:8042/instances \
     --data-binary @"$f"
 done
@@ -525,24 +525,24 @@ done
 
 ```bash
 # Study 수 확인 → 컨테이너 재시작 → 다시 확인 (동일해야 함)
-curl -s -u bsnuh:bsnuh!23 http://localhost:8042/statistics
+curl -s -u UserID:UserID!23 http://localhost:8042/statistics
 docker compose -f anno-docker-compose.yml down
 docker compose -f anno-docker-compose.yml up -d
-curl -s -u bsnuh:bsnuh!23 http://localhost:8042/statistics
+curl -s -u UserID:UserID!23 http://localhost:8042/statistics
 ```
 
 #### 테스트 2: 백업 → 삭제 → 복구
 
 ```bash
 # 1. 상태 기록 + 백업
-curl -s -u bsnuh:bsnuh!23 http://localhost:8042/statistics > before.json
+curl -s -u UserID:UserID!23 http://localhost:8042/statistics > before.json
 docker exec orthanc_db pg_dump -U orthanc orthanc_db > test_backup.sql
 rsync -a /data/pacs/orthanc_dicom/ /tmp/test_orthanc_dicom/
 
 # 2. Study 하나 삭제
-STUDY_ID=$(curl -s -u bsnuh:bsnuh!23 http://localhost:8042/studies \
+STUDY_ID=$(curl -s -u UserID:UserID!23 http://localhost:8042/studies \
   | python3 -c "import sys,json; print(json.load(sys.stdin)[0])")
-curl -u bsnuh:bsnuh!23 -X DELETE http://localhost:8042/studies/${STUDY_ID}
+curl -u UserID:UserID!23 -X DELETE http://localhost:8042/studies/${STUDY_ID}
 
 # 3. 복구 실행
 docker compose -f anno-docker-compose.yml down
@@ -555,7 +555,7 @@ docker compose -f anno-docker-compose.yml restart orthanc
 sleep 5
 
 # 4. 검증 (차이 없으면 성공)
-curl -s -u bsnuh:bsnuh!23 http://localhost:8042/statistics > after.json
+curl -s -u UserID:UserID!23 http://localhost:8042/statistics > after.json
 diff <(python3 -m json.tool before.json) <(python3 -m json.tool after.json)
 ```
 
@@ -591,10 +591,10 @@ docker compose -f anno-docker-compose.yml logs postgres
 ### DICOMweb 엔드포인트 응답 없음
 ```bash
 # 인증 포함 테스트
-curl -u bsnuh:bsnuh!23 http://localhost:8042/dicom-web/studies
+curl -u UserID:UserID!23 http://localhost:8042/dicom-web/studies
 
 # 원격 서버
-curl -u bsnuh:bsnuh!23 http://192.168.0.100:8042/dicom-web/studies
+curl -u UserID:UserID!23 http://192.168.0.100:8042/dicom-web/studies
 ```
 
 ### 원격 클라이언트에서 접속 안 됨
