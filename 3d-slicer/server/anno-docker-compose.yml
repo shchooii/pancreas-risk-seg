@@ -48,7 +48,7 @@ services:
       # 사용자 추가: {"user1": "pass1", "user2": "pass2"} JSON 형식
       ORTHANC__AUTHENTICATION_ENABLED: "true"
       ORTHANC__REGISTERED_USERS: |
-        {"bsnuh": "bsnuh!23"}
+        {"ID": "PASSWORD"}
       # --- DICOMweb 플러그인 설정 ---
       ORTHANC__DICOM_WEB__ENABLE: "true"
       ORTHANC__DICOM_WEB__ROOT: /dicom-web/
